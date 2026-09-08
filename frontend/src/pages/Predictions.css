@@ -1,0 +1,431 @@
+/* =========================================
+   MARG - AI PREDICTIONS
+   ========================================= */
+
+.predictions-page {
+  min-height: 100vh;
+  background: #f5f8fc;
+  padding: 32px;
+  color: #0f2747;
+}
+
+
+/* ================= HEADER ================= */
+
+.predictions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 28px;
+}
+
+.predictions-header h1 {
+  margin: 0;
+
+  font-size: 30px;
+  font-weight: 700;
+
+  color: #0f2747;
+}
+
+.predictions-header p {
+  margin: 7px 0 0;
+
+  color: #64748b;
+  font-size: 14px;
+}
+
+.ai-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: #eaf1ff;
+  color: #2563eb;
+
+  padding: 9px 13px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* ================= SUMMARY ================= */
+
+.prediction-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 18px;
+
+  margin-bottom: 24px;
+}
+
+.prediction-stat {
+  background: white;
+
+  border: 1px solid #e3eaf3;
+
+  border-radius: 14px;
+
+  padding: 20px;
+
+  box-shadow: 0 4px 15px rgba(15, 39, 71, 0.05);
+}
+
+.prediction-stat-label {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.prediction-stat-value {
+  display: block;
+
+  margin-top: 6px;
+
+  font-size: 26px;
+  font-weight: 700;
+
+  color: #0f2747;
+}
+
+.prediction-stat-description {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+}
+
+
+/* ================= MAIN CARD ================= */
+
+.predictions-card {
+  background: white;
+
+  border: 1px solid #e3eaf3;
+
+  border-radius: 15px;
+
+  padding: 23px;
+
+  box-shadow: 0 4px 15px rgba(15, 39, 71, 0.05);
+}
+
+
+/* ================= CARD HEADER ================= */
+
+.predictions-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 20px;
+}
+
+.predictions-card-header h3 {
+  margin: 0;
+
+  color: #0f2747;
+
+  font-size: 17px;
+}
+
+.predictions-card-header p {
+  margin: 5px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+}
+
+
+/* ================= TABLE ================= */
+
+.prediction-table {
+  width: 100%;
+
+  border-collapse: collapse;
+}
+
+.prediction-table th {
+  padding: 13px 12px;
+
+  text-align: left;
+
+  background: #f8fafc;
+
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.4px;
+
+  border-bottom: 1px solid #e5ebf3;
+}
+
+.prediction-table td {
+  padding: 17px 12px;
+
+  border-bottom: 1px solid #edf2f7;
+
+  color: #475569;
+
+  font-size: 12px;
+}
+
+.prediction-table tr:last-child td {
+  border-bottom: none;
+}
+
+.prediction-table tr:hover {
+  background: #f9fbff;
+}
+
+
+/* ================= PROJECT NAME ================= */
+
+.prediction-project-name {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+}
+
+.prediction-project-icon {
+  width: 37px;
+  height: 37px;
+
+  border-radius: 9px;
+
+  background: #eaf1ff;
+
+  color: #2563eb;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.prediction-project-name strong {
+  display: block;
+
+  color: #0f2747;
+
+  font-size: 12px;
+}
+
+.prediction-project-name span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+}
+
+
+/* ================= RISK PROGRESS ================= */
+
+.risk-progress {
+  width: 90px;
+}
+
+.risk-progress-bar {
+  height: 6px;
+
+  background: #edf2f7;
+
+  border-radius: 20px;
+
+  overflow: hidden;
+
+  margin-bottom: 5px;
+}
+
+.risk-progress-fill {
+  height: 100%;
+
+  border-radius: 20px;
+}
+
+
+/* Risk levels */
+
+.risk-progress-fill.low {
+  background: #42a86f;
+}
+
+.risk-progress-fill.medium {
+  background: #e8b04c;
+}
+
+.risk-progress-fill.high {
+  background: #ed8b45;
+}
+
+.risk-progress-fill.critical {
+  background: #d9534f;
+}
+
+
+/* ================= RISK VALUE ================= */
+
+.risk-value {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.risk-value.low {
+  color: #15945b;
+}
+
+.risk-value.medium {
+  color: #c57a00;
+}
+
+.risk-value.high {
+  color: #d66b38;
+}
+
+.risk-value.critical {
+  color: #d9534f;
+}
+
+
+/* ================= RISK BADGE ================= */
+
+.prediction-risk-badge {
+  display: inline-block;
+
+  padding: 6px 10px;
+
+  border-radius: 20px;
+
+  font-size: 9px;
+
+  font-weight: 700;
+}
+
+.prediction-risk-badge.low {
+  background: #eaf8f1;
+  color: #168454;
+}
+
+.prediction-risk-badge.medium {
+  background: #fff5df;
+  color: #c57a00;
+}
+
+.prediction-risk-badge.high {
+  background: #fff0e9;
+  color: #d66b38;
+}
+
+.prediction-risk-badge.critical {
+  background: #fdecec;
+  color: #d9534f;
+}
+
+
+/* ================= AI EXPLANATION ================= */
+
+.ai-explanation {
+  margin-top: 22px;
+
+  padding: 18px;
+
+  background: #f5f8ff;
+
+  border: 1px solid #dbe7ff;
+
+  border-radius: 12px;
+
+  display: flex;
+
+  gap: 13px;
+}
+
+.ai-explanation-icon {
+  width: 35px;
+  height: 35px;
+
+  flex-shrink: 0;
+
+  border-radius: 9px;
+
+  background: #2563eb;
+
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-explanation h4 {
+  margin: 0 0 5px;
+
+  color: #0f2747;
+
+  font-size: 13px;
+}
+
+.ai-explanation p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  line-height: 1.6;
+}
+
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 1000px) {
+
+  .prediction-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .predictions-card {
+    overflow-x: auto;
+  }
+
+  .prediction-table {
+    min-width: 750px;
+  }
+
+}
+
+@media (max-width: 600px) {
+
+  .predictions-page {
+    padding: 18px;
+  }
+
+  .prediction-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .predictions-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+}

@@ -1,0 +1,100 @@
+import { Link } from "react-router-dom";
+import { Sparkles, ArrowUpRight } from "lucide-react";
+import "./Predictions.css";
+
+const PREDICTIONS = [
+  {
+    id: 2,
+    project: "Godavari River Bridge",
+    confidence: 91,
+    summary:
+      "High likelihood of cost overrun due to fluctuating steel prices and a compressed monsoon working window.",
+    factors: [
+      { label: "Cost overrun likelihood", value: 68, level: "high" },
+      { label: "Schedule slippage risk", value: 52, level: "medium" },
+    ],
+  },
+  {
+    id: 4,
+    project: "Rural Water Pipeline",
+    confidence: 87,
+    summary:
+      "Delays in pipe-fitting material delivery are pushing the current phase 3 weeks behind the baseline schedule.",
+    factors: [
+      { label: "Material supply risk", value: 74, level: "high" },
+      { label: "Schedule slippage risk", value: 61, level: "high" },
+    ],
+  },
+  {
+    id: 1,
+    project: "NH-44 Widening Phase II",
+    confidence: 94,
+    summary:
+      "Overall trajectory is healthy; minor weather-related slippage possible in Q4 but unlikely to affect the deadline.",
+    factors: [
+      { label: "Weather disruption", value: 30, level: "medium" },
+      { label: "Cost overrun likelihood", value: 12, level: "low" },
+    ],
+  },
+  {
+    id: 6,
+    project: "Smart Traffic Signal Grid",
+    confidence: 89,
+    summary:
+      "Procurement of signal controllers is on schedule; no significant risk factors detected this cycle.",
+    factors: [
+      { label: "Cost overrun likelihood", value: 15, level: "low" },
+      { label: "Schedule slippage risk", value: 10, level: "low" },
+    ],
+  },
+];
+
+function Predictions() {
+  return (
+    <div>
+      <div className="page-header">
+        <div>
+          <h1>AI Predictions</h1>
+          <p>Model-generated risk forecasts across your active projects.</p>
+        </div>
+      </div>
+
+      {PREDICTIONS.map((p) => (
+        <div className="prediction-card" key={p.id}>
+          <div className="prediction-top">
+            <div>
+              <p className="list-row-title" style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <Sparkles size={15} color="#2563eb" />
+                {p.project}
+              </p>
+              <p className="alert-desc" style={{ margin: 0, maxWidth: 560 }}>
+                {p.summary}
+              </p>
+            </div>
+            <span className="confidence-pill">{p.confidence}% confidence</span>
+          </div>
+
+          {p.factors.map((f) => (
+            <div className="factor-row" key={f.label}>
+              <span style={{ minWidth: 190 }}>{f.label}</span>
+              <div className="factor-track">
+                <div className={`factor-fill ${f.level}`} style={{ width: `${f.value}%` }} />
+              </div>
+              <strong style={{ fontSize: 13, width: 34, textAlign: "right" }}>{f.value}%</strong>
+            </div>
+          ))}
+
+          <Link
+            to={`/dashboard/projects/${p.id}`}
+            className="panel-link"
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 14 }}
+          >
+            View project details <ArrowUpRight size={13} />
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default Predictions;

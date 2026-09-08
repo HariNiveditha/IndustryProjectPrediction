@@ -14,7 +14,7 @@ function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
+     navigate("/dashboard");
     setError("");
 
     try {

@@ -1,0 +1,301 @@
+/* =========================================
+   MARG - PROJECTS PAGE
+   ========================================= */
+
+.projects-page {
+  min-height: 100vh;
+  background: #f5f8fc;
+  padding: 32px;
+  color: #0f2747;
+}
+
+
+/* ================= HEADER ================= */
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  color: #0f2747;
+}
+
+.page-header p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+
+/* ================= BUTTON ================= */
+
+.btn-primary {
+  border: none;
+  background: #2563eb;
+  color: white;
+  padding: 11px 17px;
+  border-radius: 9px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+
+/* ================= FILTERS ================= */
+
+.projects-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  border: 1px solid #d8e1ed;
+  background: white;
+  color: #64748b;
+
+  padding: 9px 17px;
+  border-radius: 20px;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.filter-pill:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.filter-pill.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+
+/* ================= PROJECT GRID ================= */
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+
+/* ================= PROJECT CARD ================= */
+
+.project-card {
+  background: white;
+  border: 1px solid #e3eaf3;
+  border-radius: 15px;
+
+  padding: 21px;
+
+  text-decoration: none;
+  color: inherit;
+
+  box-shadow: 0 4px 15px rgba(15, 39, 71, 0.05);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
+
+  border-color: #b8cdf5;
+
+  box-shadow:
+    0 12px 30px rgba(37, 99, 235, 0.10);
+}
+
+
+/* ================= CARD TOP ================= */
+
+.project-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+
+/* ================= ICON ================= */
+
+.list-row-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #eaf1ff;
+  color: #2563eb;
+}
+
+
+/* ================= STATUS BADGES ================= */
+
+.badge {
+  padding: 6px 10px;
+  border-radius: 20px;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+
+/* LOW / ON TRACK */
+
+.badge.on-track {
+  background: #eaf8f1;
+  color: #168454;
+}
+
+
+/* MEDIUM / AT RISK */
+
+.badge.at-risk {
+  background: #fff5df;
+  color: #c57a00;
+}
+
+
+/* HIGH / DELAYED */
+
+.badge.delayed {
+  background: #fff0e9;
+  color: #d66b38;
+}
+
+
+/* COMPLETED */
+
+.badge.completed {
+  background: #edf2ff;
+  color: #4969c7;
+}
+
+
+/* ================= PROJECT TITLE ================= */
+
+.project-card h3 {
+  margin: 0 0 9px;
+
+  color: #0f2747;
+
+  font-size: 16px;
+  font-weight: 650;
+
+  line-height: 1.4;
+}
+
+
+/* ================= LOCATION ================= */
+
+.project-card-loc {
+  margin: 0 0 20px;
+
+  color: #718096;
+
+  font-size: 12px;
+}
+
+
+/* ================= PROGRESS ================= */
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+
+  background: #eaf0f7;
+
+  border-radius: 20px;
+
+  overflow: hidden;
+
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+
+  background: linear-gradient(
+    90deg,
+    #2563eb,
+    #4c83e8
+  );
+
+  border-radius: 20px;
+
+  transition: width 0.5s ease;
+}
+
+
+/* ================= FOOTER ================= */
+
+.project-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+}
+
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 1100px) {
+
+  .projects-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+}
+
+@media (max-width: 700px) {
+
+  .projects-page {
+    padding: 18px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
