@@ -1,76 +1,235 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ShieldAlert, ArrowUpRight } from "lucide-react";
-import "./Dashboard.css";
+import React from "react";
+import {
+  AlertTriangle,
+  CircleCheck,
+  Clock3,
+  ShieldAlert,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
+import "./Alerts.css";
 
-const ALERTS = [
-  { id: 1, projectId: 2, project: "Godavari River Bridge", title: "Budget overrun risk detected", desc: "Projected spend is trending 14% above baseline for this phase.", severity: "high", time: "2 hours ago" },
-  { id: 2, projectId: 4, project: "Rural Water Pipeline", title: "Material delivery delayed 6 days", desc: "Pipe-fitting supplier reported a logistics delay affecting phase 3.", severity: "medium", time: "5 hours ago" },
-  { id: 3, projectId: 1, project: "NH-44 Widening Phase II", title: "Weather disruption forecasted", desc: "Heavy rainfall expected next week may slow earthwork progress.", severity: "low", time: "1 day ago" },
-  { id: 4, projectId: 2, project: "Godavari River Bridge", title: "Contractor workforce shortage", desc: "On-site labor count is 18% below planned staffing this month.", severity: "high", time: "1 day ago" },
-  { id: 5, projectId: 3, project: "Metro Corridor Extension", title: "Inspection scheduled", desc: "Quality inspection for structural phase due in 3 days.", severity: "low", time: "2 days ago" },
-  { id: 6, projectId: 6, project: "Smart Traffic Signal Grid", title: "Permit renewal required", desc: "Municipal permit for signal installation expires in 10 days.", severity: "medium", time: "3 days ago" },
+const alerts = [
+  {
+    id: 1,
+    project: "Hyderabad Regional Hospital",
+    message:
+      "Project expenditure is increasing faster than the planned budget.",
+    level: "Critical",
+    time: "12 mins ago",
+    icon: ShieldAlert,
+  },
+  {
+    id: 2,
+    project: "National Highway Expansion",
+    message:
+      "Physical progress is 18% behind the scheduled completion timeline.",
+    level: "High",
+    time: "1 hour ago",
+    icon: AlertTriangle,
+  },
+  {
+    id: 3,
+    project: "Metro Rail Phase II",
+    message:
+      "Recent milestone delays may increase the expected completion period.",
+    level: "Medium",
+    time: "3 hours ago",
+    icon: Clock3,
+  },
 ];
 
-const FILTERS = ["All", "High", "Medium", "Low"];
-
 function Alerts() {
-  const [filter, setFilter] = useState("All");
-
-  const filtered =
-    filter === "All"
-      ? ALERTS
-      : ALERTS.filter((a) => a.severity === filter.toLowerCase());
-
   return (
-    <div>
-      <div className="page-header">
+    <div className="alerts-page">
+
+      {/* HEADER */}
+      <div className="alerts-header">
         <div>
-          <h1>Alerts</h1>
-          <p>{ALERTS.length} alerts across your project portfolio.</p>
+          <p className="section-label">PROJECT MONITORING</p>
+          <h1>Alerts & Early Warnings</h1>
+          <p>
+            AI-powered notifications highlighting projects that may require
+            immediate attention.
+          </p>
         </div>
+
+        <button className="refresh-btn">
+          Refresh Alerts
+        </button>
       </div>
 
-      <div className="projects-toolbar">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            className={`filter-pill ${filter === f ? "active" : ""}`}
-            onClick={() => setFilter(f)}
-          >
-            {f}
-          </button>
-        ))}
+      {/* SUMMARY CARDS */}
+      <div className="alert-summary">
+
+        <div className="alert-stat critical-stat">
+          <div className="stat-icon">
+            <ShieldAlert size={21} />
+          </div>
+          <div>
+            <span>Critical</span>
+            <strong>03</strong>
+            <small>Immediate action</small>
+          </div>
+        </div>
+
+        <div className="alert-stat high-stat">
+          <div className="stat-icon">
+            <AlertTriangle size={21} />
+          </div>
+          <div>
+            <span>High Risk</span>
+            <strong>07</strong>
+            <small>Needs attention</small>
+          </div>
+        </div>
+
+        <div className="alert-stat medium-stat">
+          <div className="stat-icon">
+            <Clock3 size={21} />
+          </div>
+          <div>
+            <span>Medium Risk</span>
+            <strong>12</strong>
+            <small>Monitor closely</small>
+          </div>
+        </div>
+
+        <div className="alert-stat resolved-stat">
+          <div className="stat-icon">
+            <CircleCheck size={21} />
+          </div>
+          <div>
+            <span>Resolved</span>
+            <strong>24</strong>
+            <small>This month</small>
+          </div>
+        </div>
+
       </div>
 
-      <div className="panel">
-        {filtered.map((a) => (
-          <div className="alert-item" key={a.id}>
-            <div className={`alert-icon sev-${a.severity}`}>
-              <ShieldAlert size={17} />
+      {/* MAIN CONTENT */}
+      <div className="alerts-layout">
+
+        {/* ALERT LIST */}
+        <div className="alerts-card">
+
+          <div className="alerts-card-header">
+            <div>
+              <h2>Active Alerts</h2>
+              <p>Projects requiring monitoring or intervention</p>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                <p className="alert-title">{a.title}</p>
-                <span className="alert-time">{a.time}</span>
-              </div>
-              <p className="alert-desc">{a.desc}</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span className={`badge sev-${a.severity}`}>
-                  {a.severity === "high" ? "High" : a.severity === "medium" ? "Medium" : "Low"} severity
-                </span>
-                <Link
-                  to={`/dashboard/projects/${a.projectId}`}
-                  className="panel-link"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 3 }}
+
+            <button className="filter-btn">
+              All Alerts
+            </button>
+          </div>
+
+          <div className="alert-list">
+
+            {alerts.map((alert) => {
+              const Icon = alert.icon;
+
+              return (
+                <div
+                  className={`alert-item ${alert.level.toLowerCase()}`}
+                  key={alert.id}
                 >
-                  {a.project} <ArrowUpRight size={12} />
-                </Link>
-              </div>
+
+                  <div className="alert-icon">
+                    <Icon size={21} />
+                  </div>
+
+                  <div className="alert-content">
+
+                    <div className="alert-top">
+                      <div>
+                        <span className="alert-project">
+                          {alert.project}
+                        </span>
+
+                        <h3>{alert.message}</h3>
+                      </div>
+
+                      <span
+                        className={`alert-badge ${alert.level.toLowerCase()}`}
+                      >
+                        {alert.level}
+                      </span>
+                    </div>
+
+                    <div className="alert-bottom">
+                      <span className="alert-time">
+                        <Clock3 size={14} />
+                        {alert.time}
+                      </span>
+
+                      <button className="view-alert">
+                        View Project
+                        <ArrowRight size={15} />
+                      </button>
+                    </div>
+
+                  </div>
+
+                </div>
+              );
+            })}
+
+          </div>
+
+          <button className="view-all-btn">
+            View All Alerts
+            <ArrowRight size={16} />
+          </button>
+
+        </div>
+
+        {/* AI RECOMMENDATION */}
+        <div className="ai-alert-card">
+
+          <div className="ai-heading">
+            <div className="ai-icon">
+              <Sparkles size={20} />
+            </div>
+
+            <div>
+              <span>AI INSIGHT</span>
+              <h2>Recommended Action</h2>
             </div>
           </div>
-        ))}
+
+          <p className="ai-description">
+            MARG has identified <strong>3 projects</strong> where early
+            intervention could reduce the probability of cost escalation
+            and schedule delays.
+          </p>
+
+          <div className="ai-recommendation">
+
+            <div className="recommendation-number">
+              01
+            </div>
+
+            <div>
+              <h3>Review expenditure trend</h3>
+              <p>
+                Hyderabad Regional Hospital is showing an unusual increase
+                in monthly expenditure compared with planned progress.
+              </p>
+            </div>
+
+          </div>
+
+          <button className="ai-action">
+            Review Recommendations
+            <ArrowRight size={16} />
+          </button>
+
+        </div>
+
       </div>
+
     </div>
   );
 }
