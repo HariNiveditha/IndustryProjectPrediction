@@ -12,13 +12,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-const NAV_LINKS = [
-  { label: "Home", active: true },
-  { label: "About", active: false },
-  { label: "Features", active: false },
-  { label: "Contact", active: false },
-];
-
 const FEATURES = [
   {
     icon: Target,
@@ -196,20 +189,22 @@ export default function Home() {
           <span className="text-xl font-bold tracking-tight text-slate-900">MARG</span>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.label}
-              href="#"
-              className={`pb-1 transition-colors hover:text-blue-600 ${
-                link.active
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "border-b-2 border-transparent"
-              }`}
-            >
-              {link.label}
-            </a>
-          ))}
+        <nav className="hidden md:flex items-center gap-8">
+          <a href="#home" className="hover:text-blue-600">
+            Home
+          </a>
+
+          <a href="#about" className="hover:text-blue-600">
+            About
+          </a>
+
+          <a href="#features" className="hover:text-blue-600">
+            Features
+          </a>
+
+          <a href="#contact" className="hover:text-blue-600">
+            Contact
+          </a>
         </nav>
 
         <Link
@@ -222,7 +217,7 @@ export default function Home() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-7xl mx-auto px-6 pt-8 pb-16 grid md:grid-cols-2 gap-10 items-center">
+      <section id="home" className="max-w-7xl mx-auto px-6 pt-8 pb-16 grid md:grid-cols-2 gap-10 items-center">
         <div>
           <p className="text-blue-600 text-sm font-semibold tracking-wide mb-4">
             Insights today, safer tomorrow
@@ -250,8 +245,23 @@ export default function Home() {
         <HeroIllustration />
       </section>
 
+      <section id="about" className="py-20 px-6 bg-slate-50">
+        <div className="max-w-6xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-slate-900 mb-6">
+            About MARG
+          </h2>
+
+          <p className="text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            MARG is an AI-powered project monitoring and risk prediction platform
+            designed to help organizations monitor project performance, identify
+            potential risks, and make informed decisions before delays become
+            critical.
+          </p>
+        </div>
+      </section>
+
       {/* Feature strip */}
-      <section className="bg-blue-50/60 border-t border-blue-100">
+      <section id="features" className="bg-blue-50/60 border-t border-blue-100">
         <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <div key={title} className="flex flex-col gap-3">
@@ -264,6 +274,25 @@ export default function Home() {
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section id="contact" className="py-20 px-6 bg-slate-900 text-white">
+        <div className="max-w-6xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">
+            Contact Us
+          </h2>
+
+          <p className="text-slate-300 mb-6">
+            Have questions about MARG? Get in touch with our team.
+          </p>
+
+          <a
+            href="mailto:contact@marg.com"
+            className="inline-block bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition"
+          >
+            Contact Us
+          </a>
         </div>
       </section>
     </div>
