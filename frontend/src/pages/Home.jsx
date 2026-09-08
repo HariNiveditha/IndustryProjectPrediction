@@ -1,8 +1,8 @@
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import { Link } from "react-router-dom";
 import React from "react";
 import {
-  Eye,
-  User,
   ArrowRight,
   Target,
   BarChart3,
@@ -180,41 +180,7 @@ function HeroIllustration() {
 export default function Home() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      {/* Header */}
-      <header className="max-w-7xl mx-auto flex items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center">
-            <Eye className="w-5 h-5 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">MARG</span>
-        </div>
-
-        <nav className="hidden md:flex items-center gap-8">
-          <a href="#home" className="hover:text-blue-600">
-            Home
-          </a>
-
-          <a href="#about" className="hover:text-blue-600">
-            About
-          </a>
-
-          <a href="#features" className="hover:text-blue-600">
-            Features
-          </a>
-
-          <a href="#contact" className="hover:text-blue-600">
-            Contact
-          </a>
-        </nav>
-
-        <Link
-          to="/login"
-          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition"
-        >
-          <User size={18} />
-          Login
-        </Link>
-      </header>
+      <Navbar />
 
       {/* Hero */}
       <section id="home" className="max-w-7xl mx-auto px-6 pt-8 pb-16 grid md:grid-cols-2 gap-10 items-center">
@@ -295,6 +261,9 @@ export default function Home() {
           </a>
         </div>
       </section>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

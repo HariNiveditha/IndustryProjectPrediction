@@ -1,5 +1,4 @@
-import { Link } from "react-router-dom";
-import { Sparkles, ArrowUpRight } from "lucide-react";
+import RiskCard from "../components/RiskCard";
 import "./Predictions.css";
 
 const PREDICTIONS = [
@@ -60,38 +59,7 @@ function Predictions() {
       </div>
 
       {PREDICTIONS.map((p) => (
-        <div className="prediction-card" key={p.id}>
-          <div className="prediction-top">
-            <div>
-              <p className="list-row-title" style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <Sparkles size={15} color="#2563eb" />
-                {p.project}
-              </p>
-              <p className="alert-desc" style={{ margin: 0, maxWidth: 560 }}>
-                {p.summary}
-              </p>
-            </div>
-            <span className="confidence-pill">{p.confidence}% confidence</span>
-          </div>
-
-          {p.factors.map((f) => (
-            <div className="factor-row" key={f.label}>
-              <span style={{ minWidth: 190 }}>{f.label}</span>
-              <div className="factor-track">
-                <div className={`factor-fill ${f.level}`} style={{ width: `${f.value}%` }} />
-              </div>
-              <strong style={{ fontSize: 13, width: 34, textAlign: "right" }}>{f.value}%</strong>
-            </div>
-          ))}
-
-          <Link
-            to={`/dashboard/projects/${p.id}`}
-            className="panel-link"
-            style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 14 }}
-          >
-            View project details <ArrowUpRight size={13} />
-          </Link>
-        </div>
+        <RiskCard key={p.id} {...p} />
       ))}
     </div>
   );

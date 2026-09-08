@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Building2, Plus, MapPin, Calendar } from "lucide-react";
+import { Plus } from "lucide-react";
+import ProjectCard from "../components/ProjectCard";
 import "./Projects.css";
 
 const PROJECTS = [
@@ -19,13 +19,6 @@ const STATUS_MAP = {
   Delayed: "delayed",
   Completed: "completed",
 };
-
-function statusLabel(status) {
-  if (status === "on-track") return "On Track";
-  if (status === "at-risk") return "At Risk";
-  if (status === "delayed") return "Delayed";
-  return "Completed";
-}
 
 function Projects() {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -62,32 +55,7 @@ function Projects() {
 
       <div className="projects-grid">
         {filtered.map((p) => (
-          <Link to={`/dashboard/projects/${p.id}`} className="project-card" key={p.id}>
-            <div className="project-card-top">
-              <div className="list-row-icon">
-                <Building2 size={17} />
-              </div>
-              <span className={`badge ${p.status}`}>{statusLabel(p.status)}</span>
-            </div>
-
-            <h3>{p.name}</h3>
-            <p className="project-card-loc">
-              <MapPin size={12} style={{ display: "inline", marginRight: 4, verticalAlign: -1 }} />
-              {p.location}
-            </p>
-
-            <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${p.progress}%` }} />
-            </div>
-
-            <div className="project-card-footer">
-              <span>{p.progress}% complete</span>
-              <span>
-                <Calendar size={12} style={{ display: "inline", marginRight: 4, verticalAlign: -1 }} />
-                {p.deadline}
-              </span>
-            </div>
-          </Link>
+          <ProjectCard key={p.id} {...p} />
         ))}
       </div>
     </div>

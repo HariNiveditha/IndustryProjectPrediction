@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+import AlertCard from "../components/AlertCard";
 import "./Alerts.css";
 
 const alerts = [
@@ -127,54 +128,20 @@ function Alerts() {
 
           <div className="alert-list">
 
-            {alerts.map((alert) => {
-              const Icon = alert.icon;
-
-              return (
-                <div
-                  className={`alert-item ${alert.level.toLowerCase()}`}
-                  key={alert.id}
-                >
-
-                  <div className="alert-icon">
-                    <Icon size={21} />
-                  </div>
-
-                  <div className="alert-content">
-
-                    <div className="alert-top">
-                      <div>
-                        <span className="alert-project">
-                          {alert.project}
-                        </span>
-
-                        <h3>{alert.message}</h3>
-                      </div>
-
-                      <span
-                        className={`alert-badge ${alert.level.toLowerCase()}`}
-                      >
-                        {alert.level}
-                      </span>
-                    </div>
-
-                    <div className="alert-bottom">
-                      <span className="alert-time">
-                        <Clock3 size={14} />
-                        {alert.time}
-                      </span>
-
-                      <button className="view-alert">
-                        View Project
-                        <ArrowRight size={15} />
-                      </button>
-                    </div>
-
-                  </div>
-
-                </div>
-              );
-            })}
+            {alerts.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                title={alert.message}
+                severity={
+                  alert.level === "Critical"
+                    ? "high"
+                    : alert.level.toLowerCase()
+                }
+                time={alert.time}
+                project={alert.project}
+                projectId={alert.id}
+              />
+            ))}
 
           </div>
 

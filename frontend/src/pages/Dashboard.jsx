@@ -7,15 +7,13 @@ import {
   BarChart3,
   LogOut,
   Menu,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   Clock,
-  IndianRupee,
   Activity,
 } from "lucide-react";
 
 import "./Dashboard.css";
+import StatCard from "../components/StatCard";
 
 function Dashboard() {
   return (
@@ -127,99 +125,45 @@ function Dashboard() {
 
         <section className="stats-grid">
 
-          {/* Total Projects */}
-          <div className="stat-card">
+          <StatCard
+            icon={FolderKanban}
+            color="blue"
+            label="Total Projects"
+            value="1,981"
+            change="8.2%"
+            trend="up"
+            description="Ongoing projects"
+          />
 
-            <div className="stat-top">
-              <div className="stat-icon blue">
-                <FolderKanban size={22} />
-              </div>
+          <StatCard
+            icon={Activity}
+            color="green"
+            label="Projects On Track"
+            value="1,426"
+            change="5.4%"
+            trend="up"
+            description="72% of total projects"
+          />
 
-              <span className="stat-change positive">
-                <TrendingUp size={14} />
-                8.2%
-              </span>
-            </div>
+          <StatCard
+            icon={AlertTriangle}
+            color="orange"
+            label="Projects At Risk"
+            value="387"
+            change="3.1%"
+            trend="down"
+            description="Requires attention"
+          />
 
-            <p>Total Projects</p>
-            <h2>1,981</h2>
-
-            <span className="stat-description">
-              Ongoing projects
-            </span>
-
-          </div>
-
-
-          {/* On Track */}
-          <div className="stat-card">
-
-            <div className="stat-top">
-              <div className="stat-icon green">
-                <Activity size={22} />
-              </div>
-
-              <span className="stat-change positive">
-                <TrendingUp size={14} />
-                5.4%
-              </span>
-            </div>
-
-            <p>Projects On Track</p>
-            <h2>1,426</h2>
-
-            <span className="stat-description">
-              72% of total projects
-            </span>
-
-          </div>
-
-
-          {/* At Risk */}
-          <div className="stat-card">
-
-            <div className="stat-top">
-              <div className="stat-icon orange">
-                <AlertTriangle size={22} />
-              </div>
-
-              <span className="stat-change negative">
-                <TrendingDown size={14} />
-                3.1%
-              </span>
-            </div>
-
-            <p>Projects At Risk</p>
-            <h2>387</h2>
-
-            <span className="stat-description">
-              Requires attention
-            </span>
-
-          </div>
-
-
-          {/* Critical */}
-          <div className="stat-card">
-
-            <div className="stat-top">
-              <div className="stat-icon red">
-                <Bell size={22} />
-              </div>
-
-              <span className="stat-change negative">
-                +12
-              </span>
-            </div>
-
-            <p>Critical Alerts</p>
-            <h2>168</h2>
-
-            <span className="stat-description">
-              Need immediate action
-            </span>
-
-          </div>
+          <StatCard
+            icon={Bell}
+            color="red"
+            label="Critical Alerts"
+            value="168"
+            change="+12"
+            trend="down"
+            description="Need immediate action"
+          />
 
         </section>
 
