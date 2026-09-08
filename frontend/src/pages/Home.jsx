@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import React from "react";
 import {
   Eye,
@@ -211,10 +212,13 @@ export default function Home() {
           ))}
         </nav>
 
-        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white text-sm font-medium px-5 py-2.5 rounded-full">
-          <User className="w-4 h-4" />
+        <Link
+          to="/login"
+          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition"
+        >
+          <User size={18} />
           Login
-        </button>
+        </Link>
       </header>
 
       {/* Hero */}
@@ -234,10 +238,13 @@ export default function Home() {
             Predict risks. Prevent delays. Ensure better project outcomes with
             intelligent analytics and real-time insights.
           </p>
-          <button className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-medium px-6 py-3 rounded-full">
-            <ArrowRight className="w-4 h-4" />
+          <Link
+            to="/register"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 transition"
+          >
             Get Started
-          </button>
+            <ArrowRight size={18} />
+          </Link>
         </div>
 
         <HeroIllustration />
