@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
+from app.core.config import DATABASE_NAME
+from app.core.database import test_connection
 from app.routes.predictions import router as prediction_router
 
 
@@ -37,3 +40,17 @@ def health():
     return {
         "status": "healthy"
     }
+
+
+@app.get("/health/db")
+def database_health():
+    if test_connection():
+        return {
+            "status": "connected",
+            "database": DATABASE_NAME
+        }
+
+    return JSONResponse(
+        status_code=503,
+        content={"status": "disconnected", "database": DATABASE_NAME}
+    )
