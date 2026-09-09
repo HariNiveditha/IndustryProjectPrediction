@@ -2,9 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.routes.alerts import router as alerts_router
+from app.api.routes.analytics import router as analytics_router
+from app.api.routes.dashboard import router as dashboard_router
+from app.api.routes.predictions import router as predictions_router
+from app.api.routes.projects import router as projects_router
 from app.core.config import DATABASE_NAME
 from app.core.database import test_connection
-from app.routes.predictions import router as prediction_router
 
 
 app = FastAPI(
@@ -17,15 +21,18 @@ app = FastAPI(
 # Allow the React frontend to communicate with FastAPI
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# Prediction routes
-app.include_router(prediction_router)
+app.include_router(projects_router)
+app.include_router(predictions_router)
+app.include_router(alerts_router)
+app.include_router(dashboard_router)
+app.include_router(analytics_router)
 
 
 @app.get("/")

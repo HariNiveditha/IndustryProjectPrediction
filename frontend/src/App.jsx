@@ -38,6 +38,7 @@ function App() {
         />
 
         <Route path="/predictions" element={<Predictions />} />
+        <Route path="/predictions/:id" element={<Predictions />} />
 
         <Route path="/alerts" element={<Alerts />} />
 

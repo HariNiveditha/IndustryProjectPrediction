@@ -4,7 +4,13 @@ from pymongo.errors import PyMongoError
 from app.core.config import DATABASE_NAME, MONGODB_URI
 
 
-client = MongoClient(MONGODB_URI)
+client = MongoClient(
+	MONGODB_URI,
+	serverSelectionTimeoutMS=10_000,
+	connectTimeoutMS=10_000,
+	socketTimeoutMS=30_000,
+	retryWrites=True,
+)
 database = client[DATABASE_NAME]
 
 
