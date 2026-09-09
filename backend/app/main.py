@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routes.predictions import router as prediction_router
+
+
 app = FastAPI(
     title="Industry Project Prediction API",
     description="Backend API for project risk prediction and early warning",
     version="1.0.0"
 )
+
 
 # Allow the React frontend to communicate with FastAPI
 app.add_middleware(
@@ -15,6 +19,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Prediction routes
+app.include_router(prediction_router)
 
 
 @app.get("/")
