@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -44,8 +44,19 @@ function riskColor(risk) {
 function ProjectDetails() {
   const { id } = useParams();
   const [tab, setTab] = useState("overview");
+  const [riskData, setRiskData] = useState(null);
   const project = PROJECTS[id] || PROJECTS[1];
 
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/projects/101/risk")
+      .then((response) => response.json())
+      .then((data) => setRiskData(data))
+      .catch((error) => {
+        console.error("Failed to fetch risk data:", error);
+      });
+  }, []);
+
+  const displayedRisk = riskData?.risk_score ?? project.risk;
   const ringOffset = 2 * Math.PI * 50 * (1 - project.risk / 100);
 
   return (
@@ -124,20 +135,36 @@ function ProjectDetails() {
             </p>
           </div>
 
-          <div className="panel" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div
+            className="panel"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
             <div className="panel-header" style={{ width: "100%" }}>
               <h2>Risk Score</h2>
             </div>
+
             <div className="risk-gauge">
               <div className="risk-ring">
                 <svg viewBox="0 0 120 120" width="120" height="120">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="#e2e8f0" strokeWidth="10" />
                   <circle
                     cx="60"
                     cy="60"
                     r="50"
                     fill="none"
-                    stroke={riskColor(project.risk)}
+                    stroke="#e2e8f0"
+                    strokeWidth="10"
+                  />
+
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    fill="none"
+                    stroke={riskColor(displayedRisk)}
                     strokeWidth="10"
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 50}
@@ -145,20 +172,235 @@ function ProjectDetails() {
                     transform="rotate(-90 60 60)"
                   />
                 </svg>
+
                 <div className="risk-ring-value">
-                  <strong>{project.risk}%</strong>
-                  <span>risk level</span>
+                  <strong>{displayedRisk.toFixed(1)}</strong>
+                  <span>risk score</span>
                 </div>
               </div>
-              <p style={{ fontSize: 12.5, color: "#64748b", textAlign: "center", margin: 0 }}>
-                {project.risk >= 60
-                  ? "High risk — immediate attention recommended"
-                  : project.risk >= 30
-                  ? "Moderate risk — monitor closely"
-                  : "Low risk — project is healthy"}
+
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                }}
+              >
+                Risk Level:{" "}
+                <span style={{ color: riskColor(displayedRisk) }}>
+                  {riskData?.risk_level || "Loading..."}
+                </span>
+              </div>
+
+              <p
+                style={{
+                  fontSize: 12.5,
+                  color: "#64748b",
+                  textAlign: "center",
+                  margin: 0,
+                }}
+              >
+                {riskData?.risk_level === "CRITICAL"
+                  ? "Critical risk — immediate intervention required"
+                  : riskData?.risk_level === "HIGH"
+                    ? "High risk — immediate attention recommended"
+                    : riskData?.risk_level === "MEDIUM"
+                      ? "Moderate risk — monitor closely"
+                      : riskData?.risk_level === "LOW"
+                        ? "Low risk — project is healthy"
+                        : "Fetching AI risk assessment..."}
               </p>
             </div>
+
+            {riskData && (
+              <div
+                style={{
+                  width: "100%",
+                  marginTop: 18,
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    textAlign: "center",
+                  }}
+                >
+                  <strong>{Math.round(riskData.cost_risk * 100)}%</strong>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>
+                    Cost Risk
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    textAlign: "center",
+                  }}
+                >
+                  <strong>{Math.round(riskData.delay_risk * 100)}%</strong>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>
+                    Delay Risk
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    textAlign: "center",
+                  }}
+                >
+                  <strong>
+                    {Math.round(riskData.anomaly_adjustment * 100)}%
+                  </strong>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>
+                    Anomaly
+                  </div>
+                </div>
+              </div>
+            )}
+          </div><div
+            className="panel"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <div className="panel-header" style={{ width: "100%" }}>
+              <h2>Risk Score</h2>
+            </div>
+
+            <div className="risk-gauge">
+              <div className="risk-ring">
+                <svg viewBox="0 0 120 120" width="120" height="120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    fill="none"
+                    stroke="#e2e8f0"
+                    strokeWidth="10"
+                  />
+
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    fill="none"
+                    stroke={riskColor(displayedRisk)}
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 50}
+                    strokeDashoffset={ringOffset}
+                    transform="rotate(-90 60 60)"
+                  />
+                </svg>
+
+                <div className="risk-ring-value">
+                  <strong>{displayedRisk.toFixed(1)}</strong>
+                  <span>risk score</span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                }}
+              >
+                Risk Level:{" "}
+                <span style={{ color: riskColor(displayedRisk) }}>
+                  {riskData?.risk_level || "Loading..."}
+                </span>
+              </div>
+
+              <p
+                style={{
+                  fontSize: 12.5,
+                  color: "#64748b",
+                  textAlign: "center",
+                  margin: 0,
+                }}
+              >
+                {riskData?.risk_level === "CRITICAL"
+                  ? "Critical risk — immediate intervention required"
+                  : riskData?.risk_level === "HIGH"
+                    ? "High risk — immediate attention recommended"
+                    : riskData?.risk_level === "MEDIUM"
+                      ? "Moderate risk — monitor closely"
+                      : riskData?.risk_level === "LOW"
+                        ? "Low risk — project is healthy"
+                        : "Fetching AI risk assessment..."}
+              </p>
+            </div>
+
+            {riskData && (
+              <div
+                style={{
+                  width: "100%",
+                  marginTop: 18,
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    textAlign: "center",
+                  }}
+                >
+                  <strong>{Math.round(riskData.cost_risk * 100)}%</strong>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>
+                    Cost Risk
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    textAlign: "center",
+                  }}
+                >
+                  <strong>{Math.round(riskData.delay_risk * 100)}%</strong>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>
+                    Delay Risk
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    textAlign: "center",
+                  }}
+                >
+                  <strong>
+                    {Math.round(riskData.anomaly_adjustment * 100)}%
+                  </strong>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>
+                    Anomaly
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
         </div>
       )}
 
