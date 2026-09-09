@@ -1,0 +1,152 @@
+/* =========================================
+   MARG - AI PREDICTIONS
+   ========================================= */
+
+.predictions-page {
+  min-height: 100vh;
+  background: #f5f8fc;
+  padding: 32px;
+  color: #0f2747;
+}
+
+/* ================= HEADER ================= */
+
+.page-header {
+  margin-bottom: 28px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  color: #0f2747;
+}
+
+.page-header p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* ================= PREDICTION CARD ================= */
+
+.prediction-card {
+  background: white;
+  border: 1px solid #e3eaf3;
+  border-radius: 15px;
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 15px rgba(15, 39, 71, 0.05);
+}
+
+/* ================= CARD TOP ================= */
+
+.prediction-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.list-row-title {
+  margin: 0 0 8px;
+  color: #0f2747;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.alert-desc {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.confidence-pill {
+  background: #eaf1ff;
+  color: #2563eb;
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ================= FACTORS ================= */
+
+.factor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.factor-track {
+  flex: 1;
+  height: 8px;
+  background: #edf2f7;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.factor-fill {
+  height: 100%;
+  border-radius: 20px;
+  transition: width 0.4s ease;
+}
+
+/* ================= RISK LEVELS ================= */
+
+.factor-fill.low {
+  background: #42a86f;
+}
+
+.factor-fill.medium {
+  background: #e8b04c;
+}
+
+.factor-fill.high {
+  background: #ed8b45;
+}
+
+.factor-fill.critical {
+  background: #d9534f;
+}
+
+/* ================= PROJECT LINK ================= */
+
+.panel-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.panel-link:hover {
+  text-decoration: underline;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 700px) {
+  .predictions-page {
+    padding: 18px;
+  }
+
+  .prediction-top {
+    flex-direction: column;
+  }
+
+  .confidence-pill {
+    align-self: flex-start;
+  }
+
+  .factor-row {
+    flex-wrap: wrap;
+  }
+
+  .factor-track {
+    min-width: 150px;
+  }
+}

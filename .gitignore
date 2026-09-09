@@ -1,4 +1,18 @@
+# Python cache
 __pycache__/
 *.pyc
-__pycache__/
-*.pyc
+
+# Virtual environment
+.venv/
+
+# Node dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# Local dataset
+PAIMANA_feature_engineered_dataset.csv
