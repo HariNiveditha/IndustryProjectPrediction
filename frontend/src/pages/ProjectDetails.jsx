@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,131 +9,723 @@ import {
   Circle,
   Clock,
 } from "lucide-react";
+
+import { api } from "../api/client";
 import "./Dashboard.css";
 
-const PROJECTS = {
-  1: { name: "NH-44 Widening Phase II", location: "Nagpur, MH", progress: 72, status: "on-track", deadline: "Dec 2026", budget: "₹142 Cr", spent: "₹98 Cr", risk: 24 },
-  2: { name: "Godavari River Bridge", location: "Rajahmundry, AP", progress: 41, status: "at-risk", deadline: "Mar 2027", budget: "₹210 Cr", spent: "₹126 Cr", risk: 68 },
-  3: { name: "Metro Corridor Extension", location: "Hyderabad, TS", progress: 88, status: "on-track", deadline: "Oct 2026", budget: "₹480 Cr", spent: "₹410 Cr", risk: 15 },
-  4: { name: "Rural Water Pipeline", location: "Bidar, KA", progress: 23, status: "delayed", deadline: "Jan 2027", budget: "₹34 Cr", spent: "₹19 Cr", risk: 74 },
-  5: { name: "Coastal Highway Repair", location: "Vizag, AP", progress: 100, status: "completed", deadline: "Completed", budget: "₹58 Cr", spent: "₹55 Cr", risk: 4 },
-  6: { name: "Smart Traffic Signal Grid", location: "Pune, MH", progress: 55, status: "on-track", deadline: "Aug 2026", budget: "₹22 Cr", spent: "₹13 Cr", risk: 20 },
-};
-
-const MILESTONES = [
-  { title: "Site survey & approvals", date: "Completed Jan 2026", state: "done" },
-  { title: "Foundation & groundwork", date: "Completed May 2026", state: "done" },
-  { title: "Structural construction", date: "In progress — target Nov 2026", state: "current" },
-  { title: "Finishing & quality checks", date: "Scheduled Jan 2027", state: "pending" },
-  { title: "Handover", date: "Scheduled Mar 2027", state: "pending" },
-];
 
 function statusLabel(status) {
-  if (status === "on-track") return "On Track";
-  if (status === "at-risk") return "At Risk";
-  if (status === "delayed") return "Delayed";
-  return "Completed";
+  if (!status) return "Unknown";
+
+  const normalized = String(status).toLowerCase();
+
+  if (normalized === "on-track" || normalized === "on track") {
+    return "On Track";
+  }
+
+  if (normalized === "at-risk" || normalized === "at risk") {
+    return "At Risk";
+  }
+
+  if (normalized === "delayed") {
+    return "Delayed";
+  }
+
+  if (normalized === "completed" || normalized === "complete") {
+    return "Completed";
+  }
+
+  return status;
 }
 
+
 function riskColor(risk) {
-  if (risk >= 60) return "#ef4444";
-  if (risk >= 30) return "#f59e0b";
+  const value = Number(risk) || 0;
+
+  if (value >= 60) return "#ef4444";
+  if (value >= 30) return "#f59e0b";
   return "#22c55e";
 }
 
+
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+
+  const number = Number(value);
+
+  if (Number.isNaN(number)) {
+    return String(value);
+  }
+
+  return `₹${number.toLocaleString("en-IN")}`;
+}
+
+
+function formatDate(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    month: "short",
+    year: "numeric",
+  });
+}
+
+
+function getProgress(project, snapshot) {
+  return Number(
+    snapshot?.physical_progress ??
+      snapshot?.physicalProgress ??
+      project?.physical_progress ??
+      project?.physicalProgress ??
+      project?.progress ??
+      0
+  );
+}
+
+
+function getBudget(project, snapshot) {
+  return (
+    snapshot?.original_cost ??
+    snapshot?.originalCost ??
+    project?.original_cost ??
+    project?.originalCost ??
+    project?.budget ??
+    null
+  );
+}
+
+
+function getSpent(project, snapshot) {
+  return (
+    snapshot?.cumulative_expenditure ??
+    snapshot?.cumulativeExpenditure ??
+    project?.cumulative_expenditure ??
+    project?.cumulativeExpenditure ??
+    project?.spent ??
+    null
+  );
+}
+
+
+function getDeadline(project) {
+  return (
+    project?.target_completion_date ??
+    project?.targetCompletionDate ??
+    project?.completion_date ??
+    project?.completionDate ??
+    project?.deadline ??
+    null
+  );
+}
+
+
 function ProjectDetails() {
   const { id } = useParams();
+
+  const projectId = decodeURIComponent(id || "");
+
   const [tab, setTab] = useState("overview");
+
+  const [project, setProject] = useState(null);
+  const [snapshots, setSnapshots] = useState([]);
+
   const [riskData, setRiskData] = useState(null);
-  const project = PROJECTS[id] || PROJECTS[1];
+
+  const [loading, setLoading] = useState(true);
+  const [riskLoading, setRiskLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+
+  /*
+   * ---------------------------------------------------------
+   * LOAD PROJECT + SNAPSHOTS
+   * ---------------------------------------------------------
+   */
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/projects/101/risk")
-      .then((response) => response.json())
-      .then((data) => setRiskData(data))
-      .catch((error) => {
-        console.error("Failed to fetch risk data:", error);
-      });
-  }, []);
+    let cancelled = false;
 
-  const displayedRisk = riskData?.risk_score ?? project.risk;
-  const ringOffset = 2 * Math.PI * 50 * (1 - project.risk / 100);
+    async function loadProject() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const [projectResponse, snapshotsResponse] =
+          await Promise.all([
+            api.getProject(projectId),
+            api.getSnapshots(projectId),
+          ]);
+
+        if (cancelled) return;
+
+        setProject(projectResponse || null);
+
+        const snapshotData =
+          snapshotsResponse?.snapshots ??
+          snapshotsResponse?.data ??
+          snapshotsResponse ??
+          [];
+
+        setSnapshots(
+          Array.isArray(snapshotData)
+            ? snapshotData
+            : []
+        );
+      } catch (err) {
+        console.error("Failed to load project:", err);
+
+        if (!cancelled) {
+          setError(
+            err?.message ||
+              "Failed to load project details."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    if (projectId) {
+      loadProject();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+
+  /*
+   * ---------------------------------------------------------
+   * LOAD M3 RISK DATA
+   * ---------------------------------------------------------
+   *
+   * Keep the M3 risk API separate from the main project API.
+   * This means the new backend project structure and the M3
+   * risk engine can work together.
+   */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRisk() {
+      try {
+        setRiskLoading(true);
+
+        /*
+         * M3 risk endpoint.
+         *
+         * The old M3 page used:
+         * /projects/101/risk
+         *
+         * Here we use the actual project ID from the URL.
+         */
+
+        const response = await fetch(
+          `http://127.0.0.1:8000/projects/${encodeURIComponent(
+            projectId
+          )}/risk`
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Risk API returned ${response.status}`
+          );
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setRiskData(data);
+        }
+      } catch (err) {
+        console.error(
+          "Failed to fetch risk data:",
+          err
+        );
+
+        if (!cancelled) {
+          setRiskData(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setRiskLoading(false);
+        }
+      }
+    }
+
+    if (projectId) {
+      loadRisk();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+
+  /*
+   * ---------------------------------------------------------
+   * LATEST SNAPSHOT
+   * ---------------------------------------------------------
+   */
+
+  const latestSnapshot = useMemo(() => {
+    if (!Array.isArray(snapshots) || snapshots.length === 0) {
+      return null;
+    }
+
+    return snapshots[snapshots.length - 1];
+  }, [snapshots]);
+
+
+  /*
+   * ---------------------------------------------------------
+   * PROJECT VALUES
+   * ---------------------------------------------------------
+   */
+
+  const progress = getProgress(
+    project,
+    latestSnapshot
+  );
+
+  const budget = getBudget(
+    project,
+    latestSnapshot
+  );
+
+  const spent = getSpent(
+    project,
+    latestSnapshot
+  );
+
+  const deadline = getDeadline(project);
+
+  const projectName =
+    project?.project_name ||
+    project?.projectName ||
+    project?.name ||
+    project?.project_id ||
+    project?.projectId ||
+    projectId;
+
+  const location =
+    project?.location ||
+    [
+      project?.district,
+      project?.state,
+    ]
+      .filter(Boolean)
+      .join(", ") ||
+    "Location unavailable";
+
+  const status =
+    project?.status ||
+    project?.project_status ||
+    project?.projectStatus ||
+    "unknown";
+
+
+  /*
+   * ---------------------------------------------------------
+   * RISK VALUES
+   * ---------------------------------------------------------
+   */
+
+  const displayedRisk =
+    Number(
+      riskData?.risk_score ??
+        riskData?.overall_risk_score ??
+        riskData?.overallRiskScore
+    );
+
+  const fallbackRisk =
+    Number(project?.risk) || 0;
+
+  const finalRisk = Number.isFinite(displayedRisk)
+    ? displayedRisk
+    : fallbackRisk;
+
+  const riskLevel =
+    riskData?.risk_level ??
+    riskData?.riskLevel ??
+    (
+      finalRisk >= 80
+        ? "CRITICAL"
+        : finalRisk >= 65
+          ? "HIGH"
+          : finalRisk >= 35
+            ? "MEDIUM"
+            : "LOW"
+    );
+
+  const ringRadius = 50;
+
+  const ringCircumference =
+    2 * Math.PI * ringRadius;
+
+  const ringOffset =
+    ringCircumference *
+    (1 - Math.min(Math.max(finalRisk, 0), 100) / 100);
+
+
+  /*
+   * ---------------------------------------------------------
+   * LOADING STATE
+   * ---------------------------------------------------------
+   */
+
+  if (loading) {
+    return (
+      <div>
+        <Link
+          to="/dashboard/projects"
+          className="back-link"
+        >
+          <ArrowLeft size={15} />
+          Back to Projects
+        </Link>
+
+        <div className="panel">
+          <p>Loading project details...</p>
+        </div>
+      </div>
+    );
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * ERROR STATE
+   * ---------------------------------------------------------
+   */
+
+  if (error) {
+    return (
+      <div>
+        <Link
+          to="/dashboard/projects"
+          className="back-link"
+        >
+          <ArrowLeft size={15} />
+          Back to Projects
+        </Link>
+
+        <div className="panel">
+          <h2>Unable to load project</h2>
+
+          <p
+            style={{
+              color: "#64748b",
+              marginTop: 8,
+            }}
+          >
+            {error}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * PROJECT NOT FOUND
+   * ---------------------------------------------------------
+   */
+
+  if (!project) {
+    return (
+      <div>
+        <Link
+          to="/dashboard/projects"
+          className="back-link"
+        >
+          <ArrowLeft size={15} />
+          Back to Projects
+        </Link>
+
+        <div className="panel">
+          <h2>Project not found</h2>
+
+          <p
+            style={{
+              color: "#64748b",
+              marginTop: 8,
+            }}
+          >
+            No project was found for ID: {projectId}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * RENDER
+   * ---------------------------------------------------------
+   */
 
   return (
     <div>
-      <Link to="/dashboard/projects" className="back-link">
+
+      {/* Back button */}
+
+      <Link
+        to="/dashboard/projects"
+        className="back-link"
+      >
         <ArrowLeft size={15} />
         Back to Projects
       </Link>
 
+
+      {/* ---------------------------------------------------
+          HEADER
+      --------------------------------------------------- */}
+
       <div className="page-header">
+
         <div>
-          <h1>{project.name}</h1>
+
+          <h1>{projectName}</h1>
+
           <p>
-            <MapPin size={13} style={{ display: "inline", marginRight: 4, verticalAlign: -2 }} />
-            {project.location}
+            <MapPin
+              size={13}
+              style={{
+                display: "inline",
+                marginRight: 4,
+                verticalAlign: -2,
+              }}
+            />
+
+            {location}
           </p>
+
         </div>
-        <span className={`badge ${project.status}`} style={{ fontSize: 13, padding: "6px 14px" }}>
-          {statusLabel(project.status)}
+
+
+        <span
+          className={`badge ${String(status)
+            .toLowerCase()
+            .replace(/\s+/g, "-")}`}
+          style={{
+            fontSize: 13,
+            padding: "6px 14px",
+          }}
+        >
+          {statusLabel(status)}
         </span>
+
       </div>
 
-      <div className="stat-grid" style={{ marginBottom: 22 }}>
+
+      {/* ---------------------------------------------------
+          STAT CARDS
+      --------------------------------------------------- */}
+
+      <div
+        className="stat-grid"
+        style={{ marginBottom: 22 }}
+      >
+
+        {/* Target completion */}
+
         <div className="stat-card">
+
           <div className="stat-card-top">
-            <div className="stat-icon blue"><Calendar size={18} /></div>
+
+            <div className="stat-icon blue">
+              <Calendar size={18} />
+            </div>
+
           </div>
-          <div className="stat-value">{project.deadline}</div>
-          <div className="stat-label">Target completion</div>
+
+          <div className="stat-value">
+            {formatDate(deadline)}
+          </div>
+
+          <div className="stat-label">
+            Target completion
+          </div>
+
         </div>
+
+
+        {/* Budget */}
+
         <div className="stat-card">
+
           <div className="stat-card-top">
-            <div className="stat-icon green"><IndianRupee size={18} /></div>
+
+            <div className="stat-icon green">
+              <IndianRupee size={18} />
+            </div>
+
           </div>
-          <div className="stat-value">{project.budget}</div>
-          <div className="stat-label">Total budget</div>
+
+          <div className="stat-value">
+            {formatCurrency(budget)}
+          </div>
+
+          <div className="stat-label">
+            Total budget
+          </div>
+
         </div>
+
+
+        {/* Spent */}
+
         <div className="stat-card">
+
           <div className="stat-card-top">
-            <div className="stat-icon amber"><IndianRupee size={18} /></div>
+
+            <div className="stat-icon amber">
+              <IndianRupee size={18} />
+            </div>
+
           </div>
-          <div className="stat-value">{project.spent}</div>
-          <div className="stat-label">Spent to date</div>
+
+          <div className="stat-value">
+            {formatCurrency(spent)}
+          </div>
+
+          <div className="stat-label">
+            Spent to date
+          </div>
+
         </div>
+
       </div>
+
+
+      {/* ---------------------------------------------------
+          TABS
+      --------------------------------------------------- */}
 
       <div className="tab-row">
-        {["overview", "predictions", "milestones"].map((t) => (
+
+        {[
+          "overview",
+          "predictions",
+          "milestones",
+        ].map((t) => (
+
           <button
             key={t}
-            className={`tab-btn ${tab === t ? "active" : ""}`}
+            className={`tab-btn ${
+              tab === t ? "active" : ""
+            }`}
             onClick={() => setTab(t)}
           >
-            {t === "overview" ? "Overview" : t === "predictions" ? "Risk Prediction" : "Milestones"}
+            {t === "overview"
+              ? "Overview"
+              : t === "predictions"
+                ? "Risk Prediction"
+                : "Milestones"}
           </button>
+
         ))}
+
       </div>
 
+
+      {/* ===================================================
+          OVERVIEW
+      =================================================== */}
+
       {tab === "overview" && (
+
         <div className="dashboard-grid-2">
+
+          {/* ------------------------------------------------
+              PROGRESS
+          ------------------------------------------------ */}
+
           <div className="panel">
+
             <div className="panel-header">
+
               <h2>Progress</h2>
+
             </div>
-            <div style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", fontSize: 13.5 }}>
-              <span>Overall completion</span>
-              <strong>{project.progress}%</strong>
+
+
+            <div
+              style={{
+                marginBottom: 8,
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13.5,
+              }}
+            >
+
+              <span>
+                Overall completion
+              </span>
+
+              <strong>
+                {Math.round(progress)}%
+              </strong>
+
             </div>
-            <div className="progress-track" style={{ height: 10, marginBottom: 20 }}>
-              <div className="progress-fill" style={{ width: `${project.progress}%` }} />
+
+
+            <div
+              className="progress-track"
+              style={{
+                height: 10,
+                marginBottom: 20,
+              }}
+            >
+
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${Math.min(
+                    Math.max(progress, 0),
+                    100
+                  )}%`,
+                }}
+              />
+
             </div>
-            <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-              This project is currently in the structural construction phase.
-              Based on current velocity, the team is tracking close to the
-              planned schedule with manageable variance in material lead times.
+
+
+            <p
+              style={{
+                fontSize: 13.5,
+                color: "#64748b",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              Project progress is based on the latest
+              available project snapshot from the backend.
             </p>
+
           </div>
+
+
+          {/* ------------------------------------------------
+              M3 RISK SCORE
+          ------------------------------------------------ */}
 
           <div
             className="panel"
@@ -143,41 +735,77 @@ function ProjectDetails() {
               alignItems: "center",
             }}
           >
-            <div className="panel-header" style={{ width: "100%" }}>
+
+            <div
+              className="panel-header"
+              style={{ width: "100%" }}
+            >
+
               <h2>Risk Score</h2>
+
             </div>
 
+
             <div className="risk-gauge">
+
               <div className="risk-ring">
-                <svg viewBox="0 0 120 120" width="120" height="120">
+
+                <svg
+                  viewBox="0 0 120 120"
+                  width="120"
+                  height="120"
+                >
+
+                  {/* Background ring */}
+
                   <circle
                     cx="60"
                     cy="60"
-                    r="50"
+                    r={ringRadius}
                     fill="none"
                     stroke="#e2e8f0"
                     strokeWidth="10"
                   />
 
+
+                  {/* Risk ring */}
+
                   <circle
                     cx="60"
                     cy="60"
-                    r="50"
+                    r={ringRadius}
                     fill="none"
-                    stroke={riskColor(displayedRisk)}
+                    stroke={riskColor(finalRisk)}
                     strokeWidth="10"
                     strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 50}
-                    strokeDashoffset={ringOffset}
+                    strokeDasharray={
+                      ringCircumference
+                    }
+                    strokeDashoffset={
+                      ringOffset
+                    }
                     transform="rotate(-90 60 60)"
                   />
+
                 </svg>
 
+
                 <div className="risk-ring-value">
-                  <strong>{displayedRisk.toFixed(1)}</strong>
-                  <span>risk score</span>
+
+                  <strong>
+                    {riskLoading
+                      ? "—"
+                      : finalRisk.toFixed(1)}
+                  </strong>
+
+                  <span>
+                    risk score
+                  </span>
+
                 </div>
+
               </div>
+
 
               <div
                 style={{
@@ -186,11 +814,21 @@ function ProjectDetails() {
                   marginBottom: 8,
                 }}
               >
+
                 Risk Level:{" "}
-                <span style={{ color: riskColor(displayedRisk) }}>
-                  {riskData?.risk_level || "Loading..."}
+
+                <span
+                  style={{
+                    color: riskColor(finalRisk),
+                  }}
+                >
+                  {riskLoading
+                    ? "Loading..."
+                    : riskLevel}
                 </span>
+
               </div>
+
 
               <p
                 style={{
@@ -200,28 +838,41 @@ function ProjectDetails() {
                   margin: 0,
                 }}
               >
-                {riskData?.risk_level === "CRITICAL"
+
+                {riskLevel === "CRITICAL"
                   ? "Critical risk — immediate intervention required"
-                  : riskData?.risk_level === "HIGH"
+                  : riskLevel === "HIGH"
                     ? "High risk — immediate attention recommended"
-                    : riskData?.risk_level === "MEDIUM"
+                    : riskLevel === "MEDIUM"
                       ? "Moderate risk — monitor closely"
-                      : riskData?.risk_level === "LOW"
+                      : riskLevel === "LOW"
                         ? "Low risk — project is healthy"
                         : "Fetching AI risk assessment..."}
+
               </p>
+
             </div>
 
+
+            {/* ------------------------------------------------
+                M3 RISK COMPONENTS
+            ------------------------------------------------ */}
+
             {riskData && (
+
               <div
                 style={{
                   width: "100%",
                   marginTop: 18,
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gridTemplateColumns:
+                    "1fr 1fr 1fr",
                   gap: 10,
                 }}
               >
+
+                {/* Cost Risk */}
+
                 <div
                   style={{
                     padding: 10,
@@ -230,11 +881,28 @@ function ProjectDetails() {
                     textAlign: "center",
                   }}
                 >
-                  <strong>{Math.round(riskData.cost_risk * 100)}%</strong>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>
+
+                  <strong>
+                    {Math.round(
+                      Number(
+                        riskData.cost_risk ?? 0
+                      ) * 100
+                    )}%
+                  </strong>
+
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#64748b",
+                    }}
+                  >
                     Cost Risk
                   </div>
+
                 </div>
+
+
+                {/* Delay Risk */}
 
                 <div
                   style={{
@@ -244,11 +912,28 @@ function ProjectDetails() {
                     textAlign: "center",
                   }}
                 >
-                  <strong>{Math.round(riskData.delay_risk * 100)}%</strong>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>
+
+                  <strong>
+                    {Math.round(
+                      Number(
+                        riskData.delay_risk ?? 0
+                      ) * 100
+                    )}%
+                  </strong>
+
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#64748b",
+                    }}
+                  >
                     Delay Risk
                   </div>
+
                 </div>
+
+
+                {/* Anomaly */}
 
                 <div
                   style={{
@@ -258,204 +943,451 @@ function ProjectDetails() {
                     textAlign: "center",
                   }}
                 >
+
                   <strong>
-                    {Math.round(riskData.anomaly_adjustment * 100)}%
+                    {Math.round(
+                      Number(
+                        riskData.anomaly_adjustment ?? 0
+                      ) * 100
+                    )}%
                   </strong>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>
+
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#64748b",
+                    }}
+                  >
                     Anomaly
                   </div>
+
                 </div>
+
               </div>
+
             )}
-          </div><div
-            className="panel"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <div className="panel-header" style={{ width: "100%" }}>
-              <h2>Risk Score</h2>
-            </div>
 
-            <div className="risk-gauge">
-              <div className="risk-ring">
-                <svg viewBox="0 0 120 120" width="120" height="120">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    fill="none"
-                    stroke="#e2e8f0"
-                    strokeWidth="10"
-                  />
-
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    fill="none"
-                    stroke={riskColor(displayedRisk)}
-                    strokeWidth="10"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 50}
-                    strokeDashoffset={ringOffset}
-                    transform="rotate(-90 60 60)"
-                  />
-                </svg>
-
-                <div className="risk-ring-value">
-                  <strong>{displayedRisk.toFixed(1)}</strong>
-                  <span>risk score</span>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                }}
-              >
-                Risk Level:{" "}
-                <span style={{ color: riskColor(displayedRisk) }}>
-                  {riskData?.risk_level || "Loading..."}
-                </span>
-              </div>
-
-              <p
-                style={{
-                  fontSize: 12.5,
-                  color: "#64748b",
-                  textAlign: "center",
-                  margin: 0,
-                }}
-              >
-                {riskData?.risk_level === "CRITICAL"
-                  ? "Critical risk — immediate intervention required"
-                  : riskData?.risk_level === "HIGH"
-                    ? "High risk — immediate attention recommended"
-                    : riskData?.risk_level === "MEDIUM"
-                      ? "Moderate risk — monitor closely"
-                      : riskData?.risk_level === "LOW"
-                        ? "Low risk — project is healthy"
-                        : "Fetching AI risk assessment..."}
-              </p>
-            </div>
-
-            {riskData && (
-              <div
-                style={{
-                  width: "100%",
-                  marginTop: 18,
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: 10,
-                }}
-              >
-                <div
-                  style={{
-                    padding: 10,
-                    borderRadius: 8,
-                    background: "#f8fafc",
-                    textAlign: "center",
-                  }}
-                >
-                  <strong>{Math.round(riskData.cost_risk * 100)}%</strong>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>
-                    Cost Risk
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    padding: 10,
-                    borderRadius: 8,
-                    background: "#f8fafc",
-                    textAlign: "center",
-                  }}
-                >
-                  <strong>{Math.round(riskData.delay_risk * 100)}%</strong>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>
-                    Delay Risk
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    padding: 10,
-                    borderRadius: 8,
-                    background: "#f8fafc",
-                    textAlign: "center",
-                  }}
-                >
-                  <strong>
-                    {Math.round(riskData.anomaly_adjustment * 100)}%
-                  </strong>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>
-                    Anomaly
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
         </div>
+
       )}
+
+
+      {/* ===================================================
+          PREDICTIONS
+      =================================================== */}
 
       {tab === "predictions" && (
+
         <div className="panel">
+
           <div className="panel-header">
+
             <h2>AI Risk Factors</h2>
-            <span className="confidence-pill">91% model confidence</span>
+
+            <span className="confidence-pill">
+
+              {riskData?.model_confidence
+                ? `${Math.round(
+                    Number(
+                      riskData.model_confidence
+                    ) * 100
+                  )}% model confidence`
+                : "AI Risk Assessment"}
+
+            </span>
+
           </div>
-          {[
-            { label: "Cost overrun likelihood", value: 62, level: "high" },
-            { label: "Schedule slippage risk", value: 45, level: "medium" },
-            { label: "Weather / seasonal disruption", value: 30, level: "medium" },
-            { label: "Material supply risk", value: 18, level: "low" },
-          ].map((f) => (
-            <div key={f.label}>
-              <div className="factor-row">
-                <span style={{ minWidth: 200 }}>{f.label}</span>
-                <div className="factor-track">
-                  <div className={`factor-fill ${f.level}`} style={{ width: `${f.value}%` }} />
+
+
+          {/* Dynamic M3 risk factors */}
+
+          {riskData ? (
+
+            <>
+
+              <div>
+                <div className="factor-row">
+
+                  <span
+                    style={{
+                      minWidth: 200,
+                    }}
+                  >
+                    Cost overrun likelihood
+                  </span>
+
+                  <div className="factor-track">
+
+                    <div
+                      className={`factor-fill ${
+                        Number(
+                          riskData.cost_risk
+                        ) >= 0.6
+                          ? "high"
+                          : Number(
+                              riskData.cost_risk
+                            ) >= 0.3
+                            ? "medium"
+                            : "low"
+                      }`}
+                      style={{
+                        width: `${
+                          Number(
+                            riskData.cost_risk ?? 0
+                          ) * 100
+                        }%`,
+                      }}
+                    />
+
+                  </div>
+
+                  <strong
+                    style={{
+                      fontSize: 13,
+                      width: 34,
+                      textAlign: "right",
+                    }}
+                  >
+                    {Math.round(
+                      Number(
+                        riskData.cost_risk ?? 0
+                      ) * 100
+                    )}%
+                  </strong>
+
                 </div>
-                <strong style={{ fontSize: 13, width: 34, textAlign: "right" }}>{f.value}%</strong>
               </div>
-            </div>
-          ))}
+
+
+              <div>
+                <div className="factor-row">
+
+                  <span
+                    style={{
+                      minWidth: 200,
+                    }}
+                  >
+                    Schedule slippage risk
+                  </span>
+
+                  <div className="factor-track">
+
+                    <div
+                      className={`factor-fill ${
+                        Number(
+                          riskData.delay_risk
+                        ) >= 0.6
+                          ? "high"
+                          : Number(
+                              riskData.delay_risk
+                            ) >= 0.3
+                            ? "medium"
+                            : "low"
+                      }`}
+                      style={{
+                        width: `${
+                          Number(
+                            riskData.delay_risk ?? 0
+                          ) * 100
+                        }%`,
+                      }}
+                    />
+
+                  </div>
+
+                  <strong
+                    style={{
+                      fontSize: 13,
+                      width: 34,
+                      textAlign: "right",
+                    }}
+                  >
+                    {Math.round(
+                      Number(
+                        riskData.delay_risk ?? 0
+                      ) * 100
+                    )}%
+                  </strong>
+
+                </div>
+              </div>
+
+
+              <div>
+                <div className="factor-row">
+
+                  <span
+                    style={{
+                      minWidth: 200,
+                    }}
+                  >
+                    Expenditure / progress anomaly
+                  </span>
+
+                  <div className="factor-track">
+
+                    <div
+                      className={`factor-fill ${
+                        Number(
+                          riskData.anomaly_adjustment
+                        ) >= 0.6
+                          ? "high"
+                          : Number(
+                              riskData.anomaly_adjustment
+                            ) >= 0.3
+                            ? "medium"
+                            : "low"
+                      }`}
+                      style={{
+                        width: `${
+                          Number(
+                            riskData.anomaly_adjustment ??
+                              0
+                          ) * 100
+                        }%`,
+                      }}
+                    />
+
+                  </div>
+
+                  <strong
+                    style={{
+                      fontSize: 13,
+                      width: 34,
+                      textAlign: "right",
+                    }}
+                  >
+                    {Math.round(
+                      Number(
+                        riskData.anomaly_adjustment ??
+                          0
+                      ) * 100
+                    )}%
+                  </strong>
+
+                </div>
+              </div>
+
+            </>
+
+          ) : (
+
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: 13.5,
+              }}
+            >
+              Risk prediction data is currently
+              unavailable.
+            </p>
+
+          )}
+
         </div>
+
       )}
 
+
+      {/* ===================================================
+          MILESTONES / SNAPSHOT HISTORY
+      =================================================== */}
+
       {tab === "milestones" && (
+
         <div className="panel">
+
           <div className="panel-header">
-            <h2>Milestone Timeline</h2>
+
+            <h2>Project Snapshot History</h2>
+
           </div>
-          {MILESTONES.map((m, i) => (
-            <div className="milestone" key={i}>
-              <div className="milestone-line" />
-              <div className={`milestone-dot ${m.state}`}>
-                {m.state === "done" ? (
-                  <CheckCircle2 size={14} />
-                ) : m.state === "current" ? (
-                  <Clock size={13} />
-                ) : (
-                  <Circle size={12} />
-                )}
-              </div>
-              <div>
-                <p className="milestone-title">{m.title}</p>
-                <p className="milestone-date">{m.date}</p>
-              </div>
+
+
+          {snapshots.length === 0 ? (
+
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: 13.5,
+              }}
+            >
+              No project snapshots are available yet.
+            </p>
+
+          ) : (
+
+            <div
+              style={{
+                overflowX: "auto",
+              }}
+            >
+
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: 13,
+                }}
+              >
+
+                <thead>
+
+                  <tr>
+
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: 10,
+                        borderBottom:
+                          "1px solid #e2e8f0",
+                      }}
+                    >
+                      Date
+                    </th>
+
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: 10,
+                        borderBottom:
+                          "1px solid #e2e8f0",
+                      }}
+                    >
+                      Physical Progress
+                    </th>
+
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: 10,
+                        borderBottom:
+                          "1px solid #e2e8f0",
+                      }}
+                    >
+                      Expenditure
+                    </th>
+
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: 10,
+                        borderBottom:
+                          "1px solid #e2e8f0",
+                      }}
+                    >
+                      Status
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  {snapshots.map(
+                    (snapshot, index) => {
+
+                      const snapshotProgress =
+                        getProgress(
+                          project,
+                          snapshot
+                        );
+
+                      const snapshotSpent =
+                        getSpent(
+                          project,
+                          snapshot
+                        );
+
+                      const snapshotDate =
+                        snapshot?.date ??
+                        snapshot?.snapshot_date ??
+                        snapshot?.snapshotDate ??
+                        snapshot?.created_at ??
+                        snapshot?.createdAt;
+
+                      return (
+
+                        <tr
+                          key={
+                            snapshot?._id ||
+                            snapshot?.id ||
+                            index
+                          }
+                        >
+
+                          <td
+                            style={{
+                              padding: 10,
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                            }}
+                          >
+                            {formatDate(
+                              snapshotDate
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: 10,
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                            }}
+                          >
+                            {Math.round(
+                              snapshotProgress
+                            )}%
+                          </td>
+
+                          <td
+                            style={{
+                              padding: 10,
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                            }}
+                          >
+                            {formatCurrency(
+                              snapshotSpent
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: 10,
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                            }}
+                          >
+                            Snapshot
+                          </td>
+
+                        </tr>
+
+                      );
+
+                    }
+                  )}
+
+                </tbody>
+
+              </table>
+
             </div>
-          ))}
+
+          )}
+
         </div>
+
       )}
+
     </div>
   );
 }
+
 
 export default ProjectDetails;
