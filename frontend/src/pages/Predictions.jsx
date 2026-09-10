@@ -1,71 +1,66 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { api } from "../api/client";
+import RiskCard from "../components/RiskCard";
 import "./Predictions.css";
 
-function percent(value) {
-  return value == null ? "Unavailable" : `${(value * 100).toFixed(2)}%`;
-}
+const PREDICTIONS = [
+  {
+    id: 2,
+    project: "Godavari River Bridge",
+    confidence: 91,
+    summary:
+      "High likelihood of cost overrun due to fluctuating steel prices and a compressed monsoon working window.",
+    factors: [
+      { label: "Cost overrun likelihood", value: 68, level: "high" },
+      { label: "Schedule slippage risk", value: 52, level: "medium" },
+    ],
+  },
+  {
+    id: 4,
+    project: "Rural Water Pipeline",
+    confidence: 87,
+    summary:
+      "Delays in pipe-fitting material delivery are pushing the current phase 3 weeks behind the baseline schedule.",
+    factors: [
+      { label: "Material supply risk", value: 74, level: "high" },
+      { label: "Schedule slippage risk", value: 61, level: "high" },
+    ],
+  },
+  {
+    id: 1,
+    project: "NH-44 Widening Phase II",
+    confidence: 94,
+    summary:
+      "Overall trajectory is healthy; minor weather-related slippage possible in Q4 but unlikely to affect the deadline.",
+    factors: [
+      { label: "Weather disruption", value: 30, level: "medium" },
+      { label: "Cost overrun likelihood", value: 12, level: "low" },
+    ],
+  },
+  {
+    id: 6,
+    project: "Smart Traffic Signal Grid",
+    confidence: 89,
+    summary:
+      "Procurement of signal controllers is on schedule; no significant risk factors detected this cycle.",
+    factors: [
+      { label: "Cost overrun likelihood", value: 15, level: "low" },
+      { label: "Schedule slippage risk", value: 10, level: "low" },
+    ],
+  },
+];
 
 function Predictions() {
-  const { id } = useParams();
-  const [projects, setProjects] = useState([]);
-  const [selectedId, setSelectedId] = useState(id ? decodeURIComponent(id) : "");
-  const [data, setData] = useState(null);
-  const [explanation, setExplanation] = useState(null);
-  const [state, setState] = useState({ loading: true, error: "" });
-
-  useEffect(() => {
-    api.getProjects(100)
-      .then((result) => {
-        const items = result.items || [];
-        const requested = id ? decodeURIComponent(id) : "";
-        const requestedProject = items.find((project) => project.project_id === requested && project.prediction_available);
-        const firstReady = items.find((project) => project.prediction_available);
-        setProjects(items);
-        setSelectedId(requestedProject?.project_id || firstReady?.project_id || "");
-        if (!firstReady) setState({ loading: false, error: "No projects with usable prediction data are available." });
-      })
-      .catch((error) => setState({ loading: false, error: error.message }));
-  }, [id]);
-
-  useEffect(() => {
-    if (!selectedId) return;
-    const selectedProject = projects.find((project) => project.project_id === selectedId);
-    setData(null);
-    setExplanation(null);
-    if (selectedProject && !selectedProject.prediction_available) {
-      setState({ loading: false, error: "This project does not have enough complete snapshot features for predictions." });
-      return;
-    }
-    setState({ loading: true, error: "" });
-    Promise.all([api.getPrediction(selectedId), api.getExplanation(selectedId)])
-      .then(([prediction, shap]) => {
-        setData(prediction);
-        setExplanation(shap);
-        setState({ loading: false, error: "" });
-      })
-      .catch((error) => setState({ loading: false, error: error.message }));
-  }, [selectedId, projects]);
-
-  const unavailable = state.error.includes("does not have enough");
   return (
-    <div className="predictions-page">
-      <div className="page-header"><div><h1>AI Predictions</h1><p>Backend predictions for a selected real project.</p></div>
-        <select className="analytics-filter" value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-          <option value="">Select a project</option>
-          {projects.map((project) => <option key={project.project_id} value={project.project_id}>{project.project_name || project.project_id}{project.prediction_available ? "" : " (prediction data unavailable)"}</option>)}
-        </select>
-      </div>
-      {state.loading && <p>Loading prediction...</p>}
-      {state.error && <p role="alert">{unavailable ? `Prediction data unavailable: ${state.error}` : `Unable to load prediction: ${state.error}`}</p>}
-      {data && !state.error && <>
-        <div className="prediction-card"><div className="prediction-top"><div><h2 className="list-row-title">Snapshot {data.snapshot_date}</h2><p className="alert-desc">Risk score: {data.risk.risk_score.toFixed(2)}</p></div><span className="confidence-pill">Backend computed</span></div>
-          {[['Cost overrun probability', data.cost_overrun_target, 'high'], ['Time overrun probability', data.time_overrun_target, 'medium']].map(([label, target, color]) => <div className="factor-row" key={label}><span>{label}</span><div className="factor-track"><div className={`factor-fill ${color}`} style={{ width: `${target.probability * 100}%` }} /></div><strong>{percent(target.probability)}</strong></div>)}
-          <p className="alert-desc">Warnings: {data.early_warnings.warning_exists ? data.early_warnings.warnings.map((warning) => warning.message).join(" ") : "No early warnings."}</p>
+    <div>
+      <div className="page-header">
+        <div>
+          <h1>AI Predictions</h1>
+          <p>Model-generated risk forecasts across your active projects.</p>
         </div>
-        {explanation && <div className="prediction-card"><h2 className="list-row-title">Top SHAP contributors</h2>{['cost_overrun_target', 'time_overrun_target'].map((target) => <div key={target}><h3>{target}</h3>{explanation[target].top_contributors.map((item) => <div className="factor-row" key={`${target}-${item.feature_name}`}><span>{item.feature_name}</span><strong>{item.shap_value.toFixed(4)} ({item.contribution})</strong></div>)}</div>)}</div>}
-      </>}
+      </div>
+
+      {PREDICTIONS.map((p) => (
+        <RiskCard key={p.id} {...p} />
+      ))}
     </div>
   );
 }
