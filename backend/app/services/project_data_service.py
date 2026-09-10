@@ -8,6 +8,7 @@ from bson import ObjectId
 from pymongo.errors import PyMongoError
 
 from app.core.database import database
+from ml.model_loader import cost_features, time_features
 
 
 PROJECTS_COLLECTION = "projects"
@@ -42,6 +43,8 @@ def _validate_pagination(limit: int, skip: int) -> None:
     if skip < 0:
         raise ValueError("skip must not be negative")
 
+MODEL_FEATURES = tuple(dict.fromkeys((*cost_features, *time_features)))
+
 
 def _project_query(project_id: str) -> dict[str, Any]:
     query: dict[str, Any] = {"project_id": project_id}
@@ -56,14 +59,38 @@ def _project_query(project_id: str) -> dict[str, Any]:
 
 
 def list_projects(limit: int = 100, skip: int = 0) -> list[dict[str, Any]]:
-    """Return stored project documents without modifying MongoDB."""
+    """Return stored project documents with prediction readiness metadata."""
     _validate_pagination(limit, skip)
     try:
-        documents = (
-            database[PROJECTS_COLLECTION]
-            .find({})
-            .skip(skip)
-            .limit(limit)
+        feature_query = {
+            feature: {"$exists": True, "$ne": None}
+            for feature in MODEL_FEATURES
+        }
+        documents = database[PROJECTS_COLLECTION].aggregate(
+            [
+                {"$sort": {"_id": 1}},
+                {"$skip": skip},
+                {"$limit": limit},
+                {
+                    "$lookup": {
+                        "from": SNAPSHOTS_COLLECTION,
+                        "let": {"project_id": "$project_id"},
+                        "pipeline": [
+                            {"$match": {"$expr": {"$eq": ["$project_id", "$$project_id"]}}},
+                            {"$match": feature_query},
+                            {"$limit": 1},
+                            {"$project": {"_id": 1}},
+                        ],
+                        "as": "usable_snapshots",
+                    }
+                },
+                {
+                    "$set": {
+                        "prediction_available": {"$gt": [{"$size": "$usable_snapshots"}, 0]}
+                    }
+                },
+                {"$unset": "usable_snapshots"},
+            ]
         )
         return [_serialize_document(document) for document in documents]
     except PyMongoError as error:

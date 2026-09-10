@@ -11,6 +11,7 @@ class ProjectResponse(BaseModel):
     project_name_normalized: str | None = None
     project_code: str | None = None
     format: str | None = None
+    prediction_available: bool = False
 
 
 class ProjectListResponse(BaseModel):

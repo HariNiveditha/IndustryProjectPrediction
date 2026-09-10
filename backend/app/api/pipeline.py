@@ -11,7 +11,7 @@ from app.services.persistence_service import (
     upsert_prediction_record,
     upsert_warning_alerts,
 )
-from app.services.project_data_service import get_latest_snapshot, get_project
+from app.services.project_data_service import get_project, get_project_snapshots
 from app.services.risk_service import calculate_risk
 
 
@@ -27,9 +27,21 @@ def analyze_project(project_id: str, persist: bool = False) -> dict[str, Any]:
     if project is None:
         raise ProjectAnalysisNotFound(project_id, "project")
 
-    snapshot = get_latest_snapshot(project_id)
-    if snapshot is None:
+    snapshots = get_project_snapshots(project_id, limit=500)
+    if not snapshots:
         raise ProjectAnalysisNotFound(project_id, "snapshot")
+
+    snapshot = None
+    predictions = None
+    for candidate in reversed(snapshots):
+        try:
+            predictions = predict(candidate)
+            snapshot = candidate
+            break
+        except ValueError:
+            continue
+    if snapshot is None or predictions is None:
+        raise ProjectAnalysisNotFound(project_id, "snapshot with complete model features")
 
     snapshot_date = snapshot["snapshot_date"]
     if persist:
@@ -53,7 +65,6 @@ def analyze_project(project_id: str, persist: bool = False) -> dict[str, Any]:
             )
             return analysis
 
-    predictions = predict(snapshot)
     anomalies = detect_anomalies(snapshot)
     risk = calculate_risk(
         predictions["cost_overrun_target"]["probability"],
