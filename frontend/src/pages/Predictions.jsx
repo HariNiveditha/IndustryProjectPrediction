@@ -1,66 +1,216 @@
-import RiskCard from "../components/RiskCard";
+import { useEffect, useState } from "react";
+import { api } from "../api/client";
 import "./Predictions.css";
 
-const PREDICTIONS = [
-  {
-    id: 2,
-    project: "Godavari River Bridge",
-    confidence: 91,
-    summary:
-      "High likelihood of cost overrun due to fluctuating steel prices and a compressed monsoon working window.",
-    factors: [
-      { label: "Cost overrun likelihood", value: 68, level: "high" },
-      { label: "Schedule slippage risk", value: 52, level: "medium" },
-    ],
-  },
-  {
-    id: 4,
-    project: "Rural Water Pipeline",
-    confidence: 87,
-    summary:
-      "Delays in pipe-fitting material delivery are pushing the current phase 3 weeks behind the baseline schedule.",
-    factors: [
-      { label: "Material supply risk", value: 74, level: "high" },
-      { label: "Schedule slippage risk", value: 61, level: "high" },
-    ],
-  },
-  {
-    id: 1,
-    project: "NH-44 Widening Phase II",
-    confidence: 94,
-    summary:
-      "Overall trajectory is healthy; minor weather-related slippage possible in Q4 but unlikely to affect the deadline.",
-    factors: [
-      { label: "Weather disruption", value: 30, level: "medium" },
-      { label: "Cost overrun likelihood", value: 12, level: "low" },
-    ],
-  },
-  {
-    id: 6,
-    project: "Smart Traffic Signal Grid",
-    confidence: 89,
-    summary:
-      "Procurement of signal controllers is on schedule; no significant risk factors detected this cycle.",
-    factors: [
-      { label: "Cost overrun likelihood", value: 15, level: "low" },
-      { label: "Schedule slippage risk", value: 10, level: "low" },
-    ],
-  },
-];
+function percent(value) {
+  return value == null ? "Unavailable" : `${(value * 100).toFixed(2)}%`;
+}
 
 function Predictions() {
+  const [projects, setProjects] = useState([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [data, setData] = useState(null);
+  const [explanation, setExplanation] = useState(null);
+  const [state, setState] = useState({
+    loading: true,
+    error: "",
+  });
+
+  useEffect(() => {
+    api
+      .getProjects(100)
+      .then((result) => {
+        const items = result.items || [];
+        setProjects(items);
+
+        if (items.length > 0) {
+          setSelectedId(String(items[0].project_id));
+        } else {
+          setState({
+            loading: false,
+            error: "No projects available.",
+          });
+        }
+      })
+      .catch((error) => {
+        setState({
+          loading: false,
+          error: error.message,
+        });
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) return;
+
+    setState({
+      loading: true,
+      error: "",
+    });
+
+    Promise.all([
+      api.getPrediction(selectedId),
+      api.getExplanation(selectedId),
+    ])
+      .then(([prediction, shap]) => {
+        setData(prediction);
+        setExplanation(shap);
+
+        setState({
+          loading: false,
+          error: "",
+        });
+      })
+      .catch((error) => {
+        setData(null);
+        setExplanation(null);
+
+        setState({
+          loading: false,
+          error: error.message,
+        });
+      });
+  }, [selectedId]);
+
   return (
-    <div>
+    <div className="predictions-page">
       <div className="page-header">
         <div>
           <h1>AI Predictions</h1>
-          <p>Model-generated risk forecasts across your active projects.</p>
+          <p>Backend predictions for a selected real project.</p>
         </div>
+
+        <select
+          className="analytics-filter"
+          value={selectedId}
+          onChange={(event) => setSelectedId(event.target.value)}
+        >
+          <option value="">Select a project</option>
+
+          {projects.map((project) => (
+            <option
+              key={project.project_id}
+              value={project.project_id}
+            >
+              {project.project_name || project.project_id}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {PREDICTIONS.map((p) => (
-        <RiskCard key={p.id} {...p} />
-      ))}
+      {state.loading && <p>Loading prediction...</p>}
+
+      {state.error && (
+        <p role="alert">
+          Unable to load prediction: {state.error}
+        </p>
+      )}
+
+      {data && !state.error && (
+        <>
+          <div className="prediction-card">
+            <div className="prediction-top">
+              <div>
+                <h2 className="list-row-title">
+                  Snapshot {data.snapshot_date}
+                </h2>
+
+                <p className="alert-desc">
+                  Risk score: {data.risk.risk_score.toFixed(2)}
+                </p>
+              </div>
+
+              <span className="confidence-pill">
+                Backend computed
+              </span>
+            </div>
+
+            <div className="factor-row">
+              <span>Cost overrun probability</span>
+
+              <div className="factor-track">
+                <div
+                  className="factor-fill high"
+                  style={{
+                    width: `${
+                      data.cost_overrun_target.probability * 100
+                    }%`,
+                  }}
+                />
+              </div>
+
+              <strong>
+                {percent(
+                  data.cost_overrun_target.probability
+                )}
+              </strong>
+            </div>
+
+            <div className="factor-row">
+              <span>Time overrun probability</span>
+
+              <div className="factor-track">
+                <div
+                  className="factor-fill medium"
+                  style={{
+                    width: `${
+                      data.time_overrun_target.probability * 100
+                    }%`,
+                  }}
+                />
+              </div>
+
+              <strong>
+                {percent(
+                  data.time_overrun_target.probability
+                )}
+              </strong>
+            </div>
+
+            <p className="alert-desc">
+              Warnings:{" "}
+              {data.early_warnings.warning_exists
+                ? data.early_warnings.warnings
+                    .map((warning) => warning.message)
+                    .join(" ")
+                : "No early warnings."}
+            </p>
+          </div>
+
+          {explanation && (
+            <div className="prediction-card">
+              <h2 className="list-row-title">
+                Top SHAP contributors
+              </h2>
+
+              {[
+                "cost_overrun_target",
+                "time_overrun_target",
+              ].map((target) => (
+                <div key={target}>
+                  <h3>{target}</h3>
+
+                  {explanation[target].top_contributors.map(
+                    (item) => (
+                      <div
+                        className="factor-row"
+                        key={`${target}-${item.feature_name}`}
+                      >
+                        <span>{item.feature_name}</span>
+
+                        <strong>
+                          {item.shap_value.toFixed(4)}{" "}
+                          ({item.contribution})
+                        </strong>
+                      </div>
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
